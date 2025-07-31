@@ -21,4 +21,4 @@ Easily install [Oh My Posh](https://ohmyposh.dev), optional Nerd Fonts, and the 
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
-iwr -useb https://raw.githubusercontent.com/hiheys/<repo-name>/main/installer.ps1 | iex
+iwr -useb https://raw.github.com/Hiheys/Oh-my-posh-AutoInstaller/main/Install-en.ps1 | iex
