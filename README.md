@@ -1,4 +1,5 @@
 # ⚡ Oh My Posh PowerShell Auto-Installer
+<img width="1448" height="839" alt="image" src="https://github.com/user-attachments/assets/7d19af98-fbba-4776-bb6a-9b699fa3d422" />
 
 Easily install [Oh My Posh](https://ohmyposh.dev), optional Nerd Fonts, and the `Terminal-Icons` module with a single script!
 
