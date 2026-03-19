@@ -1,224 +1,128 @@
-<#
-    Oh My Posh Auto Installer (SAFE + Auto PS7)
-    Includes: PowerShell 7+, Oh My Posh, Nerd Fonts, Terminal-Icons
-#>
+# =====================================================
+# ⚡ Oh My Posh PowerShell Auto-Installer V4
+# =====================================================
 
-# ==============================
-# ⚙️ GLOBAL SETTINGS
-# ==============================
+# Ustawienia podstawowe
 $ErrorActionPreference = "Stop"
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-trap {
-    Write-Host "`n❌ Wystąpił błąd:" -ForegroundColor Red
-    Write-Host $_ -ForegroundColor DarkRed
-    Write-Host "`nNaciśnij ENTER aby zakończyć..." -ForegroundColor Yellow
-    Read-Host
-    break
-}
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 Write-Host "`n[🔧] Uruchamianie instalatora Oh My Posh..." -ForegroundColor Cyan
 
-# ==============================
-# 🔍 HELPER FUNCTIONS
-# ==============================
-
-function Stop-Script($msg) {
-    Write-Host "`n❌ $msg" -ForegroundColor Red
-    Write-Host "`nNaciśnij ENTER aby zakończyć..." -ForegroundColor Yellow
-    Read-Host
-    return
-}
-
-function Test-Internet {
-    Write-Host "`n🌐 Sprawdzanie internetu..." -ForegroundColor Gray
-    try {
-        Invoke-WebRequest "https://github.com" -Method Head -TimeoutSec 5 | Out-Null
-    } catch {
-        Stop-Script "Brak połączenia z internetem."
-    }
-}
-
-# ==============================
-# ⚡ POWERHELL 7+
-# ==============================
+# --------------------------
+# 1️⃣ Sprawdzenie PowerShell 7+
+# --------------------------
 function Ensure-PS7 {
-    if ($PSVersionTable.PSVersion.Major -ge 7) { return }
-
-    Write-Host "[⚠️] Wymagana wersja PowerShell 7+" -ForegroundColor Yellow
-    Write-Host "📥 Instalacja PowerShell 7..." -ForegroundColor Cyan
-
-    # Wymuszenie TLS1.2
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-    $ps7Version = "7.4.8"
-    $installerUrl = "https://aka.ms/win64ps7"
-    $tmpInstaller = Join-Path $env:TEMP "PowerShell-$ps7Version-win-x64.msi"
-
-    try {
-        Invoke-WebRequest -Uri $installerUrl -OutFile $tmpInstaller -UseBasicParsing
-        Write-Host "✅ Pobrano PowerShell 7!" -ForegroundColor Green
-        Start-Process "msiexec.exe" -ArgumentList "/i `"$tmpInstaller`" /qn /norestart" -Wait
-        Write-Host "✅ PowerShell 7 zainstalowany!" -ForegroundColor Green
-    } catch {
-        Write-Host "❌ Instalacja PowerShell 7 nie powiodła się: $_" -ForegroundColor Red
-        Write-Host "`n[ℹ️] Uruchom ten skrypt ponownie w PowerShell 7." -ForegroundColor Cyan
-        return
-    } finally {
-        if (Test-Path $tmpInstaller) { Remove-Item $tmpInstaller -Force }
-    }
-}
-
-# ==============================
-# ⚡ OH MY POSH
-# ==============================
-function Download-File($url, $output) {
-    try {
-        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
-        return $true
-    } catch {
-        Write-Host "❌ Błąd pobierania: $url" -ForegroundColor Red
-        return $false
-    }
-}
-
-function Install-OhMyPosh {
-    if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {
-        Write-Host "✔️ Oh My Posh już zainstalowany." -ForegroundColor Gray
-        return
-    }
-
-    Write-Host "`n📦 Instalacja Oh My Posh..." -ForegroundColor White
-
-    $installer = if ([Environment]::Is64BitOperatingSystem) {
-        "posh-windows-amd64.exe"
+    if ($PSVersionTable.PSVersion.Major -lt 7) {
+        Write-Host "[⚠️] Wymagana wersja PowerShell 7 lub wyższa!" -ForegroundColor Yellow
+        $ps7Msi = "$env:TEMP\PowerShell-7.msi"
+        Write-Host "📥 Pobieranie PowerShell 7..." -ForegroundColor Gray
+        try {
+            Invoke-WebRequest "https://aka.ms/win64ps7" -OutFile $ps7Msi -UseBasicParsing
+            Write-Host "🚀 Instalacja PowerShell 7..." -ForegroundColor Cyan
+            Start-Process msiexec.exe -ArgumentList "/i `"$ps7Msi`" /qn /norestart" -Wait
+            Remove-Item $ps7Msi -Force
+            Write-Host "✅ PowerShell 7 zainstalowany. Uruchom ponownie terminal!" -ForegroundColor Green
+            exit
+        } catch {
+            Write-Host "❌ Nie udało się zainstalować PowerShell 7: $_" -ForegroundColor Red
+            exit
+        }
     } else {
-        "posh-windows-386.exe"
-    }
-
-    $url = "https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/$installer"
-    $tmp = Join-Path $env:TEMP $installer
-
-    try {
-        if (Download-File $url $tmp) {
-            & $tmp /VERYSILENT "/CURRENTUSER"
-            Write-Host "✅ Oh My Posh zainstalowany!" -ForegroundColor Green
-        }
-    } catch {
-        Write-Host "❌ Instalacja Oh My Posh nie powiodła się." -ForegroundColor Red
-    } finally {
-        if (Test-Path $tmp) { Remove-Item $tmp -Force -ErrorAction SilentlyContinue }
+        Write-Host "✔️ PowerShell 7 wykryty." -ForegroundColor Green
     }
 }
-
-# ==============================
-# ⚡ NERD FONT
-# ==============================
-function Install-Font {
-    do {
-        $choice = Read-Host "`n🖋️ Zainstalować Cousine Nerd Font? (y/n)"
-    } while ($choice -notin @("y","n"))
-
-    if ($choice -ne "y") {
-        Write-Host "⏭️ Pominięto font." -ForegroundColor Yellow
-        return
-    }
-
-    Write-Host "`n📦 Instalacja czcionki..." -ForegroundColor White
-
-    $zipUrl = "https://github.com/ryanoasis/nerd-fonts/releases/download/v2.2.2/Cousine.zip"
-    $zipPath = Join-Path $env:TEMP "font.zip"
-    $extractPath = Join-Path $env:TEMP "font"
-
-    try {
-        if (Download-File $zipUrl $zipPath) {
-            Expand-Archive $zipPath -DestinationPath $extractPath -Force
-
-            $fonts = Get-ChildItem -Path $extractPath -Include *.ttf, *.otf -Recurse
-            $shell = New-Object -ComObject Shell.Application
-            $fontsFolder = $shell.Namespace(0x14)
-
-            foreach ($font in $fonts) {
-                $target = "$env:WINDIR\Fonts\$($font.Name)"
-                if (-not (Test-Path $target)) {
-                    $fontsFolder.CopyHere($font.FullName, 0x10)
-                }
-            }
-
-            Write-Host "✅ Czcionka zainstalowana!" -ForegroundColor Green
-        }
-    } catch {
-        Write-Host "❌ Błąd instalacji czcionki." -ForegroundColor Red
-    } finally {
-        Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
-        Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue
-    }
-}
-
-# ==============================
-# ⚡ TERMINAL-ICONS
-# ==============================
-function Install-TerminalIcons {
-    Write-Host "`n📦 Instalacja Terminal-Icons..." -ForegroundColor White
-
-    if (Get-Module -ListAvailable -Name Terminal-Icons) {
-        Write-Host "✔️ Terminal-Icons już jest." -ForegroundColor Gray
-        return
-    }
-
-    try {
-        Set-PSRepository PSGallery -InstallationPolicy Trusted
-        Install-Module Terminal-Icons -Scope CurrentUser -Force -AllowClobber
-        Write-Host "✅ Terminal-Icons zainstalowany!" -ForegroundColor Green
-    } catch {
-        Write-Host "❌ Instalacja Terminal-Icons nie powiodła się." -ForegroundColor Red
-    }
-}
-
-# ==============================
-# ⚡ PROFIL POWERSHELL
-# ==============================
-function Update-Profile {
-    Write-Host "`n📝 Aktualizacja profilu..." -ForegroundColor Gray
-
-    if (-not (Test-Path $PROFILE)) { New-Item -ItemType File -Path $PROFILE -Force | Out-Null }
-
-    if (Select-String -Path $PROFILE -Pattern "### OMP CONFIG START ###" -Quiet) {
-        Write-Host "✔️ Profil już skonfigurowany." -ForegroundColor Gray
-        return
-    }
-
-    Add-Content $PROFILE @"
-### OMP CONFIG START ###
-if (`$PSVersionTable.PSVersion.Major -ge 7) {
-    Import-Module Terminal-Icons
-    oh-my-posh init pwsh --config "`$env:POSH_THEMES_PATH\jandedobbeleer.omp.json" | Invoke-Expression
-}
-### OMP CONFIG END ###
-"@
-
-    Write-Host "✅ Profil zaktualizowany!" -ForegroundColor Green
-}
-
-# ==============================
-# 🚀 EXECUTION
-# ==============================
-Test-Internet
 Ensure-PS7
-Install-OhMyPosh
-Install-Font
-Install-TerminalIcons
-Update-Profile
 
-# ==============================
-# 📌 SUMMARY
-# ==============================
+# --------------------------
+# 2️⃣ Sprawdzenie internetu
+# --------------------------
+Write-Host "`n🌐 Sprawdzanie połączenia z internetem..." -ForegroundColor Gray
+if (-not (Test-Connection -ComputerName github.com -Count 1 -Quiet)) {
+    Write-Host "❌ Brak połączenia z GitHub. Przerwano instalację." -ForegroundColor Red
+    exit
+} else {
+    Write-Host "✔️ Połączenie z internetem OK." -ForegroundColor Green
+}
+
+# --------------------------
+# 3️⃣ Instalacja Oh My Posh
+# --------------------------
+$ompInstaller = "$env:LOCALAPPDATA\Programs\oh-my-posh\bin\oh-my-posh.exe"
+if (-not (Test-Path $ompInstaller)) {
+    Write-Host "`n📦 Pobieranie i instalacja Oh My Posh..." -ForegroundColor White
+    Invoke-Expression "winget install JanDeDobbeleer.OhMyPosh -s winget --silent --accept-package-agreements"
+} else {
+    Write-Host "✔️ Oh My Posh już zainstalowany." -ForegroundColor Gray
+}
+
+# --------------------------
+# 4️⃣ Pobranie motywu
+# --------------------------
+$themesFolder = "$env:USERPROFILE\Documents\PowerShell\PoshThemes"
+if (-not (Test-Path $themesFolder)) { New-Item -ItemType Directory -Path $themesFolder | Out-Null }
+
+$themeUrl = "https://raw.githubusercontent.com/JanDeDobbeleer/oh-my-posh/main/themes/jandedobbeleer.omp.json"
+$themePath = Join-Path $themesFolder "jandedobbeleer.omp.json"
+
+Write-Host "`n🎨 Pobieranie motywu Oh My Posh..." -ForegroundColor White
+Invoke-WebRequest $themeUrl -OutFile $themePath -UseBasicParsing
+
+# --------------------------
+# 5️⃣ Instalacja Terminal-Icons
+# --------------------------
+Write-Host "`n📦 Instalacja modułu Terminal-Icons..." -ForegroundColor White
+if (-not (Get-Module -ListAvailable -Name Terminal-Icons)) {
+    Install-Module -Name Terminal-Icons -Repository PSGallery -Scope CurrentUser -Force -AllowClobber
+    Write-Host "✅ Terminal-Icons zainstalowany!" -ForegroundColor Green
+} else {
+    Write-Host "✔️ Terminal-Icons już zainstalowany." -ForegroundColor Gray
+}
+
+# --------------------------
+# 6️⃣ Opcjonalna czcionka Cousine Nerd Font
+# --------------------------
+$fontAnswer = Read-Host "`n🖋️ Czy chcesz zainstalować czcionkę Cousine Nerd Font? (y/n)"
+if ($fontAnswer -ieq "y") {
+    $fontZip = "$env:TEMP\Cousine.zip"
+    Invoke-WebRequest "https://github.com/ryanoasis/nerd-fonts/releases/download/v2.2.2/Cousine.zip" -OutFile $fontZip -UseBasicParsing
+    Expand-Archive $fontZip -DestinationPath "$env:TEMP\Cousine" -Force
+
+    $Destination = (New-Object -ComObject Shell.Application).Namespace(0x14)
+    Get-ChildItem "$env:TEMP\Cousine" -Include '*.ttf','*.otf','*.ttc' -Recurse | ForEach-Object {
+        $tempFont = "$env:TEMP\$($_.Name)"
+        Copy-Item $_.FullName $tempFont
+        $Destination.CopyHere($tempFont, 0x10)
+        Remove-Item $tempFont -Force
+    }
+
+    Remove-Item "$env:TEMP\Cousine" -Recurse -Force
+    Remove-Item $fontZip -Force
+    Write-Host "✅ Czcionka Cousine Nerd Font zainstalowana!" -ForegroundColor Green
+} else {
+    Write-Host "⏭️ Pominięto instalację czcionki." -ForegroundColor Yellow
+}
+
+# --------------------------
+# 7️⃣ Aktualizacja profilu PowerShell
+# --------------------------
+if (-not (Select-String -Path $PROFILE -Pattern "### OMP CONFIG START ###" -Quiet)) {
+    Write-Host "`n📝 Konfiguracja PowerShell profile..." -ForegroundColor Gray
+    Add-Content -Path $PROFILE -Value "`n### OMP CONFIG START ###"
+    Add-Content -Path $PROFILE -Value "if (Get-Command oh-my-posh -ErrorAction SilentlyContinue) {"
+    Add-Content -Path $PROFILE -Value "    oh-my-posh init pwsh --config `"$themePath`" | Invoke-Expression"
+    Add-Content -Path $PROFILE -Value "}"
+    Add-Content -Path $PROFILE -Value "### OMP CONFIG END ###"
+    Write-Host "✅ Profil PowerShell zaktualizowany!" -ForegroundColor Green
+} else {
+    Write-Host "✔️ Profil PowerShell już zawiera konfigurację Oh My Posh." -ForegroundColor Gray
+}
+
+# --------------------------
+# 8️⃣ Podsumowanie
+# --------------------------
 Write-Host "`n------------------------------------------------------------" -ForegroundColor White
-Write-Host "✅ Instalacja zakończona!" -ForegroundColor Green
-Write-Host "📌 Następne kroki:" -ForegroundColor Cyan
-Write-Host "1) Uruchom PowerShell 7" -ForegroundColor Yellow
-Write-Host "2) Ustaw font: Cousine Nerd Font w terminalu" -ForegroundColor Yellow
-Write-Host "3) Ciesz się Oh My Posh + Terminal-Icons!" -ForegroundColor Yellow
+Write-Host "✅ Instalacja zakończona pomyślnie!" -ForegroundColor Green
+Write-Host "📌 Co dalej?" -ForegroundColor Cyan
+Write-Host "1) Zamknij i otwórz PowerShell 7 (pwsh)" -ForegroundColor Yellow
+Write-Host "2) W ustawieniach terminala wybierz czcionkę: Cousine Nerd Font" -ForegroundColor Yellow
 Write-Host "------------------------------------------------------------" -ForegroundColor White
-Write-Host "`nNaciśnij ENTER aby zakończyć..." -ForegroundColor Yellow
-Read-Host
