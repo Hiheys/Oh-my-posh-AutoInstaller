@@ -52,7 +52,7 @@ function Ensure-PS7 {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
     $ps7Version = "7.4.8"
-    $installerUrl = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Version/PowerShell-$ps7Version-win-x64.msi"
+    $installerUrl = "https://aka.ms/win64ps7"
     $tmpInstaller = Join-Path $env:TEMP "PowerShell-$ps7Version-win-x64.msi"
 
     try {
