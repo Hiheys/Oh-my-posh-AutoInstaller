@@ -43,35 +43,30 @@ function Test-Internet {
 # ⚡ POWERHELL 7+
 # ==============================
 function Ensure-PS7 {
-    if ($PSVersionTable.PSVersion.Major -ge 7) {
-        Write-Host "✔️ PowerShell 7+ wykryty." -ForegroundColor Green
-        return
-    }
+    if ($PSVersionTable.PSVersion.Major -ge 7) { return }
 
     Write-Host "[⚠️] Wymagana wersja PowerShell 7+" -ForegroundColor Yellow
     Write-Host "📥 Instalacja PowerShell 7..." -ForegroundColor Cyan
 
-    # Pobranie MSI (x64)
+    # Wymuszenie TLS1.2
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
     $ps7Version = "7.4.8"
     $installerUrl = "https://github.com/PowerShell/PowerShell/releases/download/v$ps7Version/PowerShell-$ps7Version-win-x64.msi"
     $tmpInstaller = Join-Path $env:TEMP "PowerShell-$ps7Version-win-x64.msi"
 
     try {
-        Write-Host "🌐 Pobieranie PowerShell 7 z GitHub..." -ForegroundColor Gray
-        Invoke-WebRequest -Uri $installerUrl -OutFile $tmpInstaller -UseBasicParsing -ErrorAction Stop
+        Invoke-WebRequest -Uri $installerUrl -OutFile $tmpInstaller -UseBasicParsing
         Write-Host "✅ Pobrano PowerShell 7!" -ForegroundColor Green
-
-        Write-Host "🚀 Uruchamianie instalatora PowerShell 7..." -ForegroundColor Cyan
         Start-Process "msiexec.exe" -ArgumentList "/i `"$tmpInstaller`" /qn /norestart" -Wait
         Write-Host "✅ PowerShell 7 zainstalowany!" -ForegroundColor Green
     } catch {
-        Stop-Script "Nie udało się zainstalować PowerShell 7: $_"
+        Write-Host "❌ Instalacja PowerShell 7 nie powiodła się: $_" -ForegroundColor Red
+        Write-Host "`n[ℹ️] Uruchom ten skrypt ponownie w PowerShell 7." -ForegroundColor Cyan
+        return
     } finally {
         if (Test-Path $tmpInstaller) { Remove-Item $tmpInstaller -Force }
     }
-
-    Write-Host "`n[ℹ️] Zamknij ten PowerShell i uruchom PowerShell 7, a następnie uruchom instalator ponownie." -ForegroundColor Cyan
-    return
 }
 
 # ==============================
