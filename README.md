@@ -27,12 +27,13 @@ If you're using the default Windows PowerShell (5.1), install PowerShell 7 first
 👉 Option 1 (Recommended – automatic)
 
 Run this in Windows PowerShell (5.1):
-
+```powershell
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 Invoke-WebRequest https://aka.ms/win64ps7 -OutFile "$env:TEMP\PowerShell-7.msi"
 Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\PowerShell-7.msi`" /qn /norestart" -Wait
+```
 
-👉 Option 2 (Manual install)
+👉 Option 2 (Manual install) **RECOMENDED**
 
 Go to the official Microsoft guide:
 `https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows?view=powershell-7.6`
