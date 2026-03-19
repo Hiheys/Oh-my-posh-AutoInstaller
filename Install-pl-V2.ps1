@@ -1,13 +1,20 @@
 <#
-    Oh My Posh Auto Installer (PRO Version)
-    Includes: Oh My Posh + Nerd Font + Terminal-Icons
+    Oh My Posh Auto Installer (SAFE VERSION)
 #>
 
 # ==============================
 # ⚙️ GLOBAL SETTINGS
 # ==============================
 $ErrorActionPreference = "Stop"
-$ProgressPreference = "SilentlyContinue"
+
+# Globalny handler błędów
+trap {
+    Write-Host "`n❌ Wystąpił błąd:" -ForegroundColor Red
+    Write-Host $_ -ForegroundColor DarkRed
+    Write-Host "`nNaciśnij ENTER aby zamknąć..." -ForegroundColor Yellow
+    Read-Host
+    break
+}
 
 Write-Host "`n[🔧] Uruchamianie instalatora Oh My Posh..." -ForegroundColor Cyan
 
@@ -15,21 +22,25 @@ Write-Host "`n[🔧] Uruchamianie instalatora Oh My Posh..." -ForegroundColor Cy
 # 🔍 FUNCTIONS
 # ==============================
 
+function Stop-Script($msg) {
+    Write-Host "`n❌ $msg" -ForegroundColor Red
+    Write-Host "`nNaciśnij ENTER aby zakończyć..." -ForegroundColor Yellow
+    Read-Host
+    return
+}
+
 function Test-Internet {
-    Write-Host "`n🌐 Sprawdzanie połączenia z internetem..." -ForegroundColor Gray
+    Write-Host "`n🌐 Sprawdzanie internetu..." -ForegroundColor Gray
     try {
         Invoke-WebRequest "https://github.com" -Method Head -TimeoutSec 5 | Out-Null
     } catch {
-        Write-Host "❌ Brak dostępu do internetu." -ForegroundColor Red
-        exit
+        Stop-Script "Brak połączenia z internetem."
     }
 }
 
 function Ensure-PS7 {
     if ($PSVersionTable.PSVersion.Major -lt 7) {
-        Write-Host "[⚠️] Wymagana wersja PowerShell 7+" -ForegroundColor Yellow
-        Write-Host "📥 https://github.com/PowerShell/PowerShell" -ForegroundColor Yellow
-        exit
+        Stop-Script "Wymagana wersja PowerShell 7+"
     }
 }
 
@@ -65,9 +76,11 @@ function Install-OhMyPosh {
             & $tmp /VERYSILENT "/CURRENTUSER"
             Write-Host "✅ Oh My Posh zainstalowany!" -ForegroundColor Green
         }
+    } catch {
+        Write-Host "❌ Instalacja Oh My Posh nie powiodła się." -ForegroundColor Red
     } finally {
         if (Test-Path $tmp) {
-            Remove-Item $tmp -Force
+            Remove-Item $tmp -Force -ErrorAction SilentlyContinue
         }
     }
 }
@@ -78,7 +91,7 @@ function Install-Font {
     } while ($choice -notin @("y","n"))
 
     if ($choice -ne "y") {
-        Write-Host "⏭️ Pominięto instalację czcionki." -ForegroundColor Yellow
+        Write-Host "⏭️ Pominięto font." -ForegroundColor Yellow
         return
     }
 
@@ -106,7 +119,7 @@ function Install-Font {
             Write-Host "✅ Czcionka zainstalowana!" -ForegroundColor Green
         }
     } catch {
-        Write-Host "❌ Błąd instalacji czcionki: $_" -ForegroundColor Red
+        Write-Host "❌ Błąd instalacji czcionki." -ForegroundColor Red
     } finally {
         Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
         Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue
@@ -117,7 +130,7 @@ function Install-TerminalIcons {
     Write-Host "`n📦 Instalacja Terminal-Icons..." -ForegroundColor White
 
     if (Get-Module -ListAvailable -Name Terminal-Icons) {
-        Write-Host "✔️ Terminal-Icons już zainstalowany." -ForegroundColor Gray
+        Write-Host "✔️ Terminal-Icons już jest." -ForegroundColor Gray
         return
     }
 
@@ -126,12 +139,12 @@ function Install-TerminalIcons {
         Install-Module Terminal-Icons -Scope CurrentUser -Force -AllowClobber
         Write-Host "✅ Terminal-Icons zainstalowany!" -ForegroundColor Green
     } catch {
-        Write-Host "❌ Błąd instalacji Terminal-Icons: $_" -ForegroundColor Red
+        Write-Host "❌ Instalacja Terminal-Icons nie powiodła się." -ForegroundColor Red
     }
 }
 
 function Update-Profile {
-    Write-Host "`n📝 Aktualizacja profilu PowerShell..." -ForegroundColor Gray
+    Write-Host "`n📝 Aktualizacja profilu..." -ForegroundColor Gray
 
     if (-not (Test-Path $PROFILE)) {
         New-Item -ItemType File -Path $PROFILE -Force | Out-Null
@@ -167,12 +180,10 @@ Install-TerminalIcons
 Update-Profile
 
 # ==============================
-# 📌 SUMMARY
+# 📌 END
 # ==============================
 
 Write-Host "`n------------------------------------------------------------" -ForegroundColor White
 Write-Host "✅ Instalacja zakończona!" -ForegroundColor Green
-Write-Host "📌 Następne kroki:" -ForegroundColor Cyan
-Write-Host "1) Uruchom ponownie PowerShell 7" -ForegroundColor Yellow
-Write-Host "2) Ustaw font: Cousine Nerd Font w terminalu" -ForegroundColor Yellow
-Write-Host "------------------------------------------------------------" -ForegroundColor White
+Write-Host "Naciśnij ENTER aby zamknąć..." -ForegroundColor Yellow
+Read-Host
