@@ -1,14 +1,15 @@
 # ⚡ Oh My Posh PowerShell Auto-Installer
 
-<img width="1448" height="839" alt="Oh My Posh preview" src="https://github.com/user-attachments/assets/7d19af98-fbba-4776-bb6a-9b699fa3d422" />
+<img width="1668" height="852" alt="image" src="https://github.com/user-attachments/assets/bfd0b2ea-98bf-4e04-9ea9-db5db0874d3b" />
 
-Easily install [Oh My Posh](https://ohmyposh.dev), optional Nerd Fonts, and the `Terminal-Icons` module with a single script!
+Easily install [Oh My Posh](https://ohmyposh.dev), optional Nerd Fonts, and the `Terminal-Icons` module with a single script — available in **Polish and English**, selectable at runtime.
 
 ---
 
 ## 🚀 Features
 
-- ✅ Auto-detects PowerShell version
+- 🌍 Interactive language selection (PL / EN) — no more separate script files per language
+- ✅ Auto-detects and installs PowerShell 7 if missing
 - 🎨 Installs the `jandedobbeleer` Oh My Posh theme
 - 🖋️ Optional Cousine Nerd Font installation (latest version)
 - 📦 Installs and configures the `Terminal-Icons` module
@@ -20,49 +21,36 @@ Easily install [Oh My Posh](https://ohmyposh.dev), optional Nerd Fonts, and the 
 ## 🖥️ Requirements
 
 - Windows 10 or Windows 11
-- PowerShell 7.x or newer (`pwsh`)
+- PowerShell 7.x or newer (`pwsh`) — the script installs it automatically if it's missing
 - `winget` (included in Windows 10 21H1+ and Windows 11)
 
 ---
 
 ## 📥 Installation
 
-### ⚠️ Step 1 — Install PowerShell 7 (if needed)
+### 🚀 Run the installer
 
-Check your current version:
-```powershell
-$PSVersionTable.PSVersion
-```
-
-If the Major version is below `7`, install PowerShell 7 first.
-
-**Option 1 — Automatic (run in Windows PowerShell 5.1):**
-```powershell
-winget install Microsoft.PowerShell --silent --accept-package-agreements
-```
-
-**Option 2 — Manual install (recommended):**
-
-Go to the official Microsoft guide and download the latest x64 MSI installer:
-```
-https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell-on-windows
-```
-
-After installation, close your terminal and open **PowerShell 7** (`pwsh`).
-
----
-
-### 🚀 Step 2 — Run the installer
-
-Open **PowerShell 7** and run:
+Open **PowerShell** (5.1 or 7 — the script will install PS7 for you if needed) and run:
 
 ```powershell
 Set-ExecutionPolicy Bypass -Scope Process -Force
-irm https://raw.githubusercontent.com/Hiheys/Oh-my-posh-AutoInstaller/main/Install-pl-V3.ps1 | iex
+irm https://raw.githubusercontent.com/Hiheys/Oh-my-posh-AutoInstaller/main/Install.ps1 | iex
 ```
 
-The script will:
-1. Verify PowerShell 7 is running
+You'll be prompted to choose a language:
+
+```
+Select language / Wybierz jezyk:
+  [1] Polski
+  [2] English
+Twoj wybor / Your choice (Enter = en):
+```
+
+Pressing **Enter** picks the language matching your system locale automatically.
+
+The script will then:
+
+1. Verify (and install, if needed) PowerShell 7
 2. Check internet connectivity
 3. Install Oh My Posh via `winget`
 4. Download the `jandedobbeleer` theme
@@ -70,9 +58,18 @@ The script will:
 6. Install the `Terminal-Icons` module
 7. Update your `$PROFILE` automatically
 
+### 🤖 Non-interactive usage
+
+For automation/provisioning, skip the language prompt by setting an environment variable first:
+
+```powershell
+$env:OMP_LANG = "en"   # or "pl"
+irm https://raw.githubusercontent.com/Hiheys/Oh-my-posh-AutoInstaller/main/Install.ps1 | iex
+```
+
 ---
 
-### 🖋️ Step 3 — Set the font in your terminal (optional)
+### 🖋️ Step 2 — Set the font in your terminal (optional)
 
 If you installed Cousine Nerd Font, set it in Windows Terminal:
 
@@ -88,24 +85,38 @@ If you installed Cousine Nerd Font, set it in Windows Terminal:
 ### Changing the theme
 
 All Oh My Posh themes are available at:
+
 ```
 https://ohmyposh.dev/docs/themes
 ```
 
 To change the theme, edit your `$PROFILE`:
+
 ```powershell
 notepad $PROFILE
 ```
 
 Replace the `--config` path with any theme from your themes folder:
+
 ```powershell
 oh-my-posh init pwsh --config "$env:USERPROFILE\Documents\PowerShell\PoshThemes\YOUR_THEME.omp.json" | Invoke-Expression
 ```
 
 Or browse and download more themes:
+
 ```powershell
 Get-PoshThemes
 ```
+
+### Adding another language
+
+All user-facing text lives in a single `$Strings` hashtable near the top of `Install.ps1`. To add a new language:
+
+1. Copy the `en` block inside `$Strings` and rename it (e.g. `de`)
+2. Translate each value
+3. Add the new option to the language prompt in `Get-InstallerLanguage`
+
+No other part of the script needs to change.
 
 ---
 
@@ -114,22 +125,25 @@ Get-PoshThemes
 **CONFIG NOT FOUND error**
 
 The theme file path in `$PROFILE` is incorrect or the file is missing. Run:
+
 ```powershell
 Test-Path "$env:USERPROFILE\Documents\PowerShell\PoshThemes\jandedobbeleer.omp.json"
 ```
+
 If it returns `False`, re-run the installer.
 
 ---
 
 **Icons display as boxes or question marks**
 
-You need a Nerd Font. Re-run the installer and choose `y` when asked about Cousine Nerd Font, then set it in your terminal settings (see Step 3).
+You need a Nerd Font. Re-run the installer and choose `y` when asked about Cousine Nerd Font, then set it in your terminal settings (see Step 2 above).
 
 ---
 
 **`oh-my-posh` not recognized after install**
 
 Restart your terminal or reload the profile:
+
 ```powershell
 . $PROFILE
 ```
@@ -138,7 +152,13 @@ Restart your terminal or reload the profile:
 
 **`winget` not found**
 
-Update the [App Installer](https://apps.microsoft.com/detail/9NBLGGH4NNS1) from the Microsoft Store, or install PowerShell 7 manually (Option 2 above).
+Update the [App Installer](https://apps.microsoft.com/detail/9NBLGGH4NNS1) from the Microsoft Store.
+
+---
+
+**Wrong language was selected**
+
+Re-run the installer and either pick the other option at the prompt, or set `$env:OMP_LANG` before running (see [Non-interactive usage](#-non-interactive-usage)).
 
 ---
 
